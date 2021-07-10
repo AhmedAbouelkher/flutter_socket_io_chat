@@ -1,16 +1,19 @@
-# flutter_socket_io_chat
+# Flutter Socket.IO chat
+This app is just a demo app to teach the idea and the tools to use to create a simple Socket.IO chat.
 
-A new Flutter project.
+ Big thanks to [joyceHong0524](https://github.com/joyceHong0524)'s amazing Android native [project](https://github.com/joyceHong0524/socket.io_android).
 
-## Getting Started
 
-This project is a starting point for a Flutter application.
+<img src="screenshots/demo.gif">
 
-A few resources to get you started if this is your first Flutter project:
+## Runing the server 
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+- Clone the project, run: `git clone https://github.com/AhmedAbouelkher/flutter_socket_io_chat.git`
+- Download and Install [Node.js](https://nodejs.org/en/download/).
+- Go into the flutter project folder, run: `cd path/to/project`
+- Go into "server" folder, run: `cd server/` *or just run: `cd path/to/project/server/`*
+- run: `npm install`
+- node .
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+
+Enjoy

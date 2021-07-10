@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_socket_io_chat/Models/events.dart';
-import 'package:flutter_socket_io_chat/Models/socket_models.dart';
+import 'package:flutter_socket_io_chat/Models/subscription_models.dart';
 
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:provider/provider.dart';
@@ -14,14 +14,20 @@ export 'package:provider/provider.dart';
 
 const String kLocalhost = 'http://localhost:3000';
 
-T? stringToEnum<T>(Iterable<T?> values, value) {
-  return values.firstWhere((type) => type.toString().split(".").last == value, orElse: () => null);
-}
-
+///Converts `enum` to `String`
 String enumToString(_enum) {
   return _enum.toString().split(".").last;
 }
 
+class NotConnected implements Exception {}
+
+class NotSubscribed implements Exception {}
+
+/// Incoming Events
+///
+/// see also:
+/// - enum `OUTEvent`
+/// - `Node.js` Server code.
 enum INEvent {
   newUserToChatRoom,
   userLeftChatRoom,
@@ -29,6 +35,12 @@ enum INEvent {
   typing,
   stopTyping,
 }
+
+/// Outgoing Events
+///
+/// see also:
+/// - enum `INEvent`
+/// - `Node.js` Server code.
 enum OUTEvent {
   subscribe,
   unsubscribe,
@@ -53,15 +65,20 @@ class SocketController {
   bool get disConnected => !connected;
   Stream<List<ChatEvent>>? get watchEvents => _newMessagesController?.stream.asBroadcastStream();
 
-  void init() {
+  /// Initializes the controller and its streams
+  ///
+  /// see also:
+  /// - connect()
+  void init({String? url}) {
     _socket ??= io(
-      _localhost,
+      url ?? _localhost,
       OptionBuilder().setTransports(['websocket']).disableAutoConnect().build(),
     );
     _newMessagesController ??= StreamController<List<ChatEvent>>.broadcast();
     _events = [];
   }
 
+  ///initializes the events listeners and sends the events to the stream controller sink
   void _initListeners() {
     _connectedAssetion();
     final _socket = this._socket!;
@@ -91,19 +108,30 @@ class SocketController {
     });
   }
 
+  ///Connects the device to the socket and initializes all the event listeners
+  ///
+  /// @Params:
+  /// - `onConnectionError`: socket error callback method.
+  /// - `connected`: socket conection success callback method.
   Socket connect({DynamicCallback? onConnectionError, VoidCallback? connected}) {
-    assert(_socket != null);
+    assert(_socket != null, "Did you forget to call `init()` first?");
 
     final _socketS = _socket!.connect();
+
     _socket!.onConnect((_) {
       _initListeners();
       connected?.call();
       log("Connected to Socket");
     });
+
     _socket!.onConnectError((data) => onConnectionError?.call(data));
     return _socketS;
   }
 
+  ///Disconnects the device from the socket.
+  ///
+  /// @Params:
+  /// - `disconnected`: socket disconection success callback method.
   Socket disconnect({VoidCallback? disconnected}) {
     final _socketS = _socket!.disconnect();
     _socket!.onDisconnect((_) {
@@ -113,6 +141,8 @@ class SocketController {
     return _socketS;
   }
 
+  ///Subscribe to a room using `subscription`
+  ///
   void subscribe(Subscription subscription, {VoidCallback? onSubscribe}) {
     _connectedAssetion();
     final _socket = this._socket!;
@@ -125,6 +155,8 @@ class SocketController {
     log("Subscribed to ${subscription.roomName}");
   }
 
+  ///unsubscribe from a room
+  ///
   void unsubscribe({VoidCallback? onUnsubscribe}) {
     _connectedAssetion();
     if (_subscription == null) return;
@@ -149,6 +181,8 @@ class SocketController {
     log("UnSubscribed from $_roomename");
   }
 
+  ///Sends a message to the users in the same room.
+  ///
   void sendMessage(Message message) {
     _connectedAssetion();
     if (_subscription == null) throw NotSubscribed();
@@ -159,7 +193,7 @@ class SocketController {
       roomName: subscription!.roomName,
     );
 
-    //Stop typing then send message
+    //Stop typing then send new message
     _socket
       ..emit(
         enumToString(OUTEvent.stopTyping),
@@ -173,6 +207,7 @@ class SocketController {
     _addNewMessage(_message);
   }
 
+  ///Sends to the room that the current user is typing.
   void typing() {
     _connectedAssetion();
     if (_subscription == null) throw NotSubscribed();
@@ -187,6 +222,7 @@ class SocketController {
     _socket.emit(enumToString(OUTEvent.stopTyping), _subscription!.roomName);
   }
 
+  ///Disposes all the objects which have been initialized and resests the whole controller.
   void dispose() {
     _socket?.dispose();
     _newMessagesController?.close();
@@ -204,18 +240,25 @@ class SocketController {
     if (disConnected) throw NotConnected();
   }
 
-  void _addNewMessage(Message _message) {
-    _events = <ChatEvent>[_message, ..._events!];
-    _newMessagesController?.sink.add(_events!);
+  void _addNewMessage(Message message) {
+    // _events = <ChatEvent>[message, ..._events!];
+    // _newMessagesController?.sink.add(_events!);
+    _addEvent(message);
   }
 
   void _newUserEvent(ChatUser user) {
-    _events = <ChatEvent>[user, ..._events!];
-    _newMessagesController?.sink.add(_events!);
+    // _events = <ChatEvent>[user, ..._events!];
+    // _newMessagesController?.sink.add(_events!);
+    _addEvent(user);
   }
 
   void _addTypingEvent(UserTyping event) {
     _events!.removeWhere((e) => e is UserTyping);
+    _events = <ChatEvent>[event, ..._events!];
+    _newMessagesController?.sink.add(_events!);
+  }
+
+  void _addEvent(event) {
     _events = <ChatEvent>[event, ..._events!];
     _newMessagesController?.sink.add(_events!);
   }
@@ -228,7 +271,3 @@ class SocketController {
     return '${_uri.scheme}://10.0.2.2:${_uri.port}';
   }
 }
-
-class NotConnected implements Exception {}
-
-class NotSubscribed implements Exception {}

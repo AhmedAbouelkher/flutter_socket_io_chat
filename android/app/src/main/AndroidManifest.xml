@@ -2,7 +2,9 @@
     package="com.example.flutter_socket_io_chat">
    <application
         android:label="flutter_socket_io_chat"
+        android:usesCleartextTraffic="true" 
         android:icon="@mipmap/ic_launcher">
+
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

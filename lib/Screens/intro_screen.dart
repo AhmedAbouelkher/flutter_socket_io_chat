@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_socket_io_chat/Controllers/socket_controller.dart';
-import 'package:flutter_socket_io_chat/Models/socket_models.dart';
-import 'package:loading_indicator/loading_indicator.dart';
+import 'package:flutter_socket_io_chat/Models/subscription_models.dart';
 import 'chat_screen.dart';
 
 class IntroScreen extends StatefulWidget {

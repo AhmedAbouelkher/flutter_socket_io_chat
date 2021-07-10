@@ -64,7 +64,7 @@ class TextBubble extends StatelessWidget {
     return ParsedText(
       alignment: TextAlign.end,
       text: message.messageContent.trim(),
-      textDirection: isArabicText ? ui.TextDirection.ltr : ui.TextDirection.rtl,
+      textDirection: !isArabicText ? ui.TextDirection.ltr : ui.TextDirection.rtl,
       parse: <MatchText>[
         MatchText(
           type: ParsedType.EMAIL,
