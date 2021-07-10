@@ -29,6 +29,9 @@ class _AdvancedTextFieldState extends State<AdvancedTextField> {
   late final StreamController<String> _streamController;
   late final FocusNode _focusNode;
   bool _started = false;
+
+  //Just for the sake of understanding the logic
+  //You can remove this vaiable if you want
   // ignore: unused_field
   bool _stopped = false;
 
