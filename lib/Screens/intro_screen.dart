@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_socket_io_chat/Controllers/socket_controller.dart';
 import 'package:flutter_socket_io_chat/Models/socket_models.dart';
-
+import 'package:loading_indicator/loading_indicator.dart';
 import 'chat_screen.dart';
 
 class IntroScreen extends StatefulWidget {
@@ -54,6 +54,7 @@ class _IntroScreenState extends State<IntroScreen> {
             ),
             TextField(
               controller: _roomEditingController,
+              onChanged: (value) {},
               decoration: InputDecoration(hintText: "Room Name"),
             ),
             ElevatedButton(

@@ -36,6 +36,8 @@ dependencies:
   font_awesome_flutter: ^9.0.0
   fancy_shimmer_image: ^2.0.0-nullsafety.0
   http:
+  stream_transform: ^2.0.0
+  loading_indicator: ^2.0.1
 
 dev_dependencies:
   flutter_test:

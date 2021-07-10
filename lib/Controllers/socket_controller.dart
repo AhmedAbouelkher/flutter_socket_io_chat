@@ -2,10 +2,14 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
+
+import 'package:flutter_socket_io_chat/Models/events.dart';
 import 'package:flutter_socket_io_chat/Models/socket_models.dart';
+
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:provider/provider.dart';
 
+export 'package:flutter_socket_io_chat/Models/events.dart';
 export 'package:provider/provider.dart';
 
 const String kLocalhost = 'http://localhost:3000';
@@ -18,8 +22,20 @@ String enumToString(_enum) {
   return _enum.toString().split(".").last;
 }
 
-enum INEvent { newUserToChatRoom, updateChat, typing, stopTyping }
-enum OUTEvent { subscribe, unsubscribe, newMessage, typing, stopTyping }
+enum INEvent {
+  newUserToChatRoom,
+  userLeftChatRoom,
+  updateChat,
+  typing,
+  stopTyping,
+}
+enum OUTEvent {
+  subscribe,
+  unsubscribe,
+  newMessage,
+  typing,
+  stopTyping,
+}
 
 typedef DynamicCallback = void Function(dynamic data);
 
@@ -29,39 +45,50 @@ class SocketController {
   Socket? _socket;
   Subscription? _subscription;
 
-  StreamController<List<Message>>? _newMessagesController;
-  List<Message>? _messages;
+  StreamController<List<ChatEvent>>? _newMessagesController;
+  List<ChatEvent>? _events;
 
   Subscription? get subscription => _subscription;
   bool get connected => _socket!.connected;
   bool get disConnected => !connected;
+  Stream<List<ChatEvent>>? get watchEvents => _newMessagesController?.stream.asBroadcastStream();
 
   void init() {
     _socket ??= io(
       _localhost,
       OptionBuilder().setTransports(['websocket']).disableAutoConnect().build(),
     );
-    _newMessagesController ??= StreamController<List<Message>>.broadcast();
-    _messages = [];
+    _newMessagesController ??= StreamController<List<ChatEvent>>.broadcast();
+    _events = [];
   }
 
   void _initListeners() {
     _connectedAssetion();
     final _socket = this._socket!;
 
-    //TODO: impelement method
-    _socket.on(enumToString(INEvent.newUserToChatRoom), (data) => null);
+    _socket.on(enumToString(INEvent.newUserToChatRoom), (data) {
+      final _user = ChatUser.fromMap(data, chatUserEvent: ChatUserEvent.joined);
+      _newUserEvent(_user);
+    });
+
+    _socket.on(enumToString(INEvent.userLeftChatRoom), (data) {
+      print(data);
+      final _user = ChatUser.fromMap(data, chatUserEvent: ChatUserEvent.left);
+      _newUserEvent(_user);
+    });
 
     _socket.on(enumToString(INEvent.updateChat), (response) {
       final _message = Message.fromJson(response);
       _addNewMessage(_message);
     });
 
-    //TODO: impelement method
-    _socket.on(enumToString(INEvent.typing), (data) => null);
+    _socket.on(enumToString(INEvent.typing), (_) {
+      _addTypingEvent(UserStartedTyping());
+    });
 
-    //TODO: impelement method
-    _socket.on(enumToString(INEvent.stopTyping), (data) => null);
+    _socket.on(enumToString(INEvent.stopTyping), (_) {
+      _addTypingEvent(UserStoppedTyping());
+    });
   }
 
   Socket connect({DynamicCallback? onConnectionError, VoidCallback? connected}) {
@@ -104,13 +131,21 @@ class SocketController {
 
     final _socket = this._socket!;
 
-    _socket.emit(
-      enumToString(OUTEvent.unsubscribe),
-      _subscription!.toMap(),
-    );
+    _socket
+      ..emit(
+        enumToString(OUTEvent.stopTyping),
+        _subscription!.roomName,
+      )
+      ..emit(
+        enumToString(OUTEvent.unsubscribe),
+        _subscription!.toMap(),
+      );
+
     final _roomename = _subscription!.roomName;
+
     onUnsubscribe?.call();
     _subscription = null;
+    _events?.clear();
     log("UnSubscribed from $_roomename");
   }
 
@@ -119,29 +154,49 @@ class SocketController {
     if (_subscription == null) throw NotSubscribed();
     final _socket = this._socket!;
 
-    _socket.emit(
-      enumToString(OUTEvent.newMessage),
-      message.toMap(),
+    final _message = message.copyWith(
+      userName: subscription!.userName,
+      roomName: subscription!.roomName,
     );
 
-    _addNewMessage(message);
+    //Stop typing then send message
+    _socket
+      ..emit(
+        enumToString(OUTEvent.stopTyping),
+        _subscription!.roomName,
+      )
+      ..emit(
+        enumToString(OUTEvent.newMessage),
+        _message.toMap(),
+      );
+
+    _addNewMessage(_message);
   }
 
-  //TODO: impelement method
-  void typing() {}
+  void typing() {
+    _connectedAssetion();
+    if (_subscription == null) throw NotSubscribed();
+    final _socket = this._socket!;
+    _socket.emit(enumToString(OUTEvent.typing), _subscription!.roomName);
+  }
 
-  //TODO: impelement method
-  void stopTyping() {}
+  void stopTyping() {
+    _connectedAssetion();
+    if (_subscription == null) throw NotSubscribed();
+    final _socket = this._socket!;
+    _socket.emit(enumToString(OUTEvent.stopTyping), _subscription!.roomName);
+  }
 
   void dispose() {
     _socket?.dispose();
     _newMessagesController?.close();
-    _messages?.clear();
+    _events?.clear();
+    unsubscribe();
 
     _socket = null;
     _subscription = null;
     _newMessagesController = null;
-    _messages = null;
+    _events = null;
   }
 
   void _connectedAssetion() {
@@ -150,8 +205,19 @@ class SocketController {
   }
 
   void _addNewMessage(Message _message) {
-    _messages = _messages! + [_message];
-    _newMessagesController?.sink.add(_messages!);
+    _events = <ChatEvent>[_message, ..._events!];
+    _newMessagesController?.sink.add(_events!);
+  }
+
+  void _newUserEvent(ChatUser user) {
+    _events = <ChatEvent>[user, ..._events!];
+    _newMessagesController?.sink.add(_events!);
+  }
+
+  void _addTypingEvent(UserTyping event) {
+    _events!.removeWhere((e) => e is UserTyping);
+    _events = <ChatEvent>[event, ..._events!];
+    _newMessagesController?.sink.add(_events!);
   }
 
   String get _localhost {
