@@ -1,10 +1,10 @@
 
-<center>
+<div align="center">
 
 <img src="screenshots/socket_io.png" width="250">
 <img src="screenshots/flutter.jpg" width="100">
 
-</center>
+</div>
 
 # Flutter Socket.IO Chat
 This app is just a demo app to teach the idea and the tools to use to create a simple Socket.IO chat.
