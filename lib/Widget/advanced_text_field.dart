@@ -5,11 +5,18 @@ import 'package:flutter/material.dart';
 enum TypingStatus { typing, stopped }
 
 class AdvancedTextField extends StatefulWidget {
+  final TextEditingController? controller;
+
+  ///Called when the user `start` or `stop` typing in the textField.
+  ///
+  ///`enum TypingStatus { typing, stopped }`
+  ///
+  ///see also:
+  ///- `TypingStatus` enum
   final ValueChanged<TypingStatus>? onSatusChange;
 
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
-  final TextEditingController? controller;
 
   final String? hintText;
 

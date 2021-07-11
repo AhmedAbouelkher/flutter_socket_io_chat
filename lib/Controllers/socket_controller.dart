@@ -19,8 +19,10 @@ String enumToString(_enum) {
   return _enum.toString().split(".").last;
 }
 
+///Error indicates that the user didn't connect to the socket
 class NotConnected implements Exception {}
 
+///Error indicates that the user didn't subscribe to a room
 class NotSubscribed implements Exception {}
 
 /// Incoming Events
@@ -68,7 +70,7 @@ class SocketController {
   /// Initializes the controller and its streams
   ///
   /// see also:
-  /// - connect()
+  /// - `connect()`
   void init({String? url}) {
     _socket ??= io(
       url ?? _localhost,
@@ -89,7 +91,6 @@ class SocketController {
     });
 
     _socket.on(enumToString(INEvent.userLeftChatRoom), (data) {
-      print(data);
       final _user = ChatUser.fromMap(data, chatUserEvent: ChatUserEvent.left);
       _newUserEvent(_user);
     });
@@ -193,7 +194,7 @@ class SocketController {
       roomName: subscription!.roomName,
     );
 
-    //Stop typing then send new message
+    //Stop typing then send new message.
     _socket
       ..emit(
         enumToString(OUTEvent.stopTyping),
@@ -236,21 +237,13 @@ class SocketController {
   }
 
   void _connectedAssetion() {
-    assert(this._socket != null);
+    assert(this._socket != null, "Did you forget to call `init()` first?");
     if (disConnected) throw NotConnected();
   }
 
-  void _addNewMessage(Message message) {
-    // _events = <ChatEvent>[message, ..._events!];
-    // _newMessagesController?.sink.add(_events!);
-    _addEvent(message);
-  }
+  void _addNewMessage(Message message) => _addEvent(message);
 
-  void _newUserEvent(ChatUser user) {
-    // _events = <ChatEvent>[user, ..._events!];
-    // _newMessagesController?.sink.add(_events!);
-    _addEvent(user);
-  }
+  void _newUserEvent(ChatUser user) => _addEvent(user);
 
   void _addTypingEvent(UserTyping event) {
     _events!.removeWhere((e) => e is UserTyping);
@@ -268,6 +261,7 @@ class SocketController {
 
     if (Platform.isIOS) return kLocalhost;
 
+    //Android local url
     return '${_uri.scheme}://10.0.2.2:${_uri.port}';
   }
 }

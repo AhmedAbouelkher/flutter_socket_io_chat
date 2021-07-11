@@ -19,6 +19,7 @@ class _IntroScreenState extends State<IntroScreen> {
     _userNameEditingController = TextEditingController();
     _roomEditingController = TextEditingController();
     WidgetsBinding.instance?.addPostFrameCallback((_) {
+      //Initilizing and connecting to the socket
       SocketController.get(context)
         ..init()
         ..connect(
@@ -53,7 +54,6 @@ class _IntroScreenState extends State<IntroScreen> {
             ),
             TextField(
               controller: _roomEditingController,
-              onChanged: (value) {},
               decoration: InputDecoration(hintText: "Room Name"),
             ),
             ElevatedButton(
@@ -62,6 +62,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   roomName: _roomEditingController.text,
                   userName: _userNameEditingController.text,
                 );
+                // Subscribe and go the Chat screen
                 SocketController.get(context).subscribe(
                   subscription,
                   onSubscribe: () {

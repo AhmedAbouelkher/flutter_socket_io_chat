@@ -15,7 +15,7 @@ class _ChatScreenState extends State<ChatScreen> {
   SocketController? _socketController;
   late final TextEditingController _textEditingController;
 
-  bool _hasText = false;
+  bool _isTextFieldHasContentYet = false;
 
   @override
   void initState() {
@@ -23,15 +23,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
     WidgetsBinding.instance?.addPostFrameCallback((_) {
       _socketController = SocketController.get(context);
+
+      //Start listening to the text editing controller
       _textEditingController.addListener(() {
         final _text = _textEditingController.text.trim();
         if (_text.isEmpty) {
           _socketController!.stopTyping();
-          _hasText = false;
+          _isTextFieldHasContentYet = false;
         } else {
-          if (_hasText) return;
+          if (_isTextFieldHasContentYet) return;
           _socketController!.typing();
-          _hasText = true;
+          _isTextFieldHasContentYet = true;
         }
       });
 
@@ -44,7 +46,6 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _socketController!.unsubscribe();
     _textEditingController.dispose();
-
     super.dispose();
   }
 
@@ -95,19 +96,25 @@ class _ChatScreenState extends State<ChatScreen> {
                           separatorBuilder: (context, index) => SizedBox(height: 5.0),
                           itemBuilder: (context, index) {
                             final _event = _events[index];
-
+                            //? If the event is a new message
                             if (_event is Message) {
+                              //TODO: Determin the type of the message user by using user's socket_id not his name.
                               return TextBubble(
                                 message: _event,
                                 type: _event.userName == _socketController!.subscription!.userName
                                     ? BubbleType.sendBubble
                                     : BubbleType.receiverBubble,
                               );
+                              //? If a user entered or left the room
                             } else if (_event is ChatUser) {
+                              //? The user has left the current room
                               if (_event.userEvent == ChatUserEvent.left) {
                                 return Center(child: Text("${_event.userName} left"));
                               }
+                              //? The user has joined a new room
                               return Center(child: Text("${_event.userName} has joined"));
+
+                              //? A user started typing event
                             } else if (_event is UserStartedTyping) {
                               return UserTypingBubble();
                             }
@@ -126,16 +133,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         SizedBox(width: 20),
                         Expanded(
                           child: AdvancedTextField(
-                            hintText: "Type your message...",
                             controller: _textEditingController,
+                            hintText: "Type your message...",
                             onSubmitted: (_) => _sendMessage(),
-                            onSatusChange: (status) {
-                              // if (status == TypingStatus.stopped) {
-                              //   _socketController!.stopTyping();
-                              //   return;
-                              // }
-                              // _socketController!.typing();
-                            },
                           ),
                         ),
                         SizedBox(width: 10),
