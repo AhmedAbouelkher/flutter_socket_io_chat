@@ -1,8 +1,8 @@
 
 <div align="center">
 
-<img src="screenshots/socket_io.png" width="250">
-<img src="screenshots/flutter.jpg" width="100">
+<img src="https://socket.io/css/images/logo.svg" width="250">
+<img src="https://flutter.dev/assets/flutter-lockup-1caf6476beed76adec3c477586da54de6b552b2f42108ec5bc68dc63bae2df75.png" width="100">
 
 </div>
 
