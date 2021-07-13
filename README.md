@@ -1,5 +1,5 @@
 
-<div style="text-align:center">
+<div align="center">
 
 <img src="screenshots/socket_io.png" width="250">
 <img src="screenshots/flutter.jpg" width="100">
