@@ -54,6 +54,18 @@ enum OUTEvent {
 typedef DynamicCallback = void Function(dynamic data);
 
 class SocketController {
+  ///Get a provider instatnce of the class
+  ///
+  ///if you want to call this method in `initState` method, remember to call after the first frame.
+  ///
+  ///example:
+  ///```
+  /// WidgetsBinding.instance?.addPostFrameCallback((_) {
+  ///     SocketController.get(context)
+  ///       ..init()
+  ///       ..connect();
+  /// });
+  ///```
   static SocketController get(BuildContext context) => context.read<SocketController>();
 
   Socket? _socket;
@@ -62,9 +74,16 @@ class SocketController {
   StreamController<List<ChatEvent>>? _newMessagesController;
   List<ChatEvent>? _events;
 
+  ///Current user room subscription
   Subscription? get subscription => _subscription;
+
+  ///`Boolean` represents the state of the socket if it is currently connected.
   bool get connected => _socket!.connected;
+
+  ///`Boolean` represents the state of the socket if it is currently diconnected form the server.
   bool get disConnected => !connected;
+
+  ///Returns a stream with the chat messages.
   Stream<List<ChatEvent>>? get watchEvents => _newMessagesController?.stream.asBroadcastStream();
 
   /// Initializes the controller and its streams
@@ -216,6 +235,7 @@ class SocketController {
     _socket.emit(enumToString(OUTEvent.typing), _subscription!.roomName);
   }
 
+  //Informs the room members that tha current user has stopped typing.
   void stopTyping() {
     _connectedAssetion();
     if (_subscription == null) throw NotSubscribed();
@@ -251,6 +271,10 @@ class SocketController {
     _newMessagesController?.sink.add(_events!);
   }
 
+  ///Add new event to the steam sink
+  ///
+  ///see also:
+  /// * `watchEvents` getter
   void _addEvent(event) {
     _events = <ChatEvent>[event, ..._events!];
     _newMessagesController?.sink.add(_events!);
